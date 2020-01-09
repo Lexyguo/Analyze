@@ -25,7 +25,7 @@
 └── README.md           # 项目文档
 ```
 ## 基础功能
->>打乱粒子的位置
+>打乱粒子的位置
 ```bash
     shuffleIdle: function () {
       var a = S.Drawing.getArea();
@@ -40,7 +40,7 @@
       }
     },
 ```
->>组合：根据由n传入所需实现样式
+>组合：根据由n传入所需绘制的样式，随机放置粒子。
 ```bash
     switchShape: function (n, fast) {
       var size,
@@ -114,12 +114,86 @@
     },
 ```
 ## 核心功能
-current是操作指令数组，action是操作指令的样式，value是操作指令的值
->>绘制文字
+>shapeCanvas 项目中用来绘制图形的HTML元素 
+
+>shapeContext 绘图元素上的一个 CanvasRenderingContext2D 二维渲染
+
+font-awesome icon文件绘制
+```bash
+    imageFile: function (url, callback) {
+      var image = new Image(),
+          a = S.Drawing.getArea();
+
+      image.onload = function () {
+        shapeContext.clearRect(0, 0, shapeCanvas.width, shapeCanvas.height);
+        shapeContext.drawImage(this, 0, 0, a.h * 0.6, a.h * 0.6);
+        callback(processCanvas());
+      };
+
+      image.onerror = function () {
+        callback(S.ShapeBuilder.letter('What?'));
+      };
+
+      image.src = url;
+    },
+```
+绘制圆
+```bash
+    circle: function (d) {
+      var r = Math.max(0, d) / 2;
+      shapeContext.clearRect(0, 0, shapeCanvas.width, shapeCanvas.height);
+      shapeContext.beginPath();
+      shapeContext.arc(r * gap, r * gap, r * gap, 0, 2 * Math.PI, false);
+      shapeContext.fill();
+      shapeContext.closePath();
+
+      return processCanvas();
+    },
+```
+绘制文本
+```bash
+    letter: function (l) {
+      var s = 0;
+
+      setFontSize(fontSize);
+      s = Math.min(fontSize,
+                  (shapeCanvas.width / shapeContext.measureText(l).width) * 0.8 * fontSize, 
+                  (shapeCanvas.height / fontSize) * (isNumber(l) ? 1 : 0.45) * fontSize);
+      setFontSize(s);
+
+      shapeContext.clearRect(0, 0, shapeCanvas.width, shapeCanvas.height);
+      shapeContext.fillText(l, shapeCanvas.width / 2, shapeCanvas.height / 2);
+
+      return processCanvas();
+    },
+```
+绘制矩形
+```bash
+    rectangle: function (w, h) {
+      var dots = [],
+          width = gap * w,
+          height = gap * h;
+
+      for (var y = 0; y < height; y += gap) {
+        for (var x = 0; x < width; x += gap) {
+          dots.push(new S.Point({
+            x: x,
+            y: y,
+          }));
+        }
+      }
+
+      return { dots: dots, w: width, h: height };
+    }
+```
+## 指令功能
+>current是操作指令数组，action是操作指令的样式，value是操作指令的值
+
+绘制文字指令
 ```bash
     S.Shape.switchShape(S.ShapeBuilder.letter(current[0] === cmd ? 'What?' : current));
 ```
->>倒计时
+倒计时指令
 ```bash
     value = parseInt(value, 10) || 10;
     value = value > 0 ? value : 10;
@@ -136,20 +210,20 @@ current是操作指令数组，action是操作指令的样式，value是操作�
       }
     }, 1000, value, true);
 ```
->>绘制矩形
+绘制矩形指令：value 是矩形长x宽字符串，限制了最大可展示矩形长宽为均30
 ```bash
     value = value && value.split('x');
     value = (value && value.length === 2) ? value : [maxShapeSize, maxShapeSize / 2];
 
     S.Shape.switchShape(S.ShapeBuilder.rectangle(Math.min(maxShapeSize, parseInt(value[0], 10)), Math.min(maxShapeSize, parseInt(value[1], 10))));
 ```
->>绘制圆
+绘制圆指令：value 是圆的半径，限制了最大可展示圆的半径为30
 ```bash
     value = parseInt(value, 10) || maxShapeSize;
     value = Math.min(value, maxShapeSize);
     S.Shape.switchShape(S.ShapeBuilder.circle(value));
 ```
->>绘制时间
+绘制时间指令
 ```bash
     var t = formatTime(new Date());
 
@@ -161,11 +235,11 @@ current是操作指令数组，action是操作指令的样式，value是操作�
         if (t !== time) {
           time = t;
           S.Shape.switchShape(S.ShapeBuilder.letter(time));
-          }
+        }
       }, 1000);
     }
 ```
->>绘制图标
+绘制图标指令 ：value 是所需绘制的font-awesome icon 图片名称
 ```bash
     S.ShapeBuilder.imageFile('font-awesome/' + value + '.png', function (obj) {
       S.Shape.switchShape(obj);
