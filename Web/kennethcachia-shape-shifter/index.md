@@ -113,12 +113,86 @@
       }
     },
 ```
+>移动
+```bash
+  _moveTowards: function (n) {
+    var details = this.distanceTo(n, true),
+        dx = details[0],
+        dy = details[1],
+        d = details[2],
+        e = this.e * d;
+
+    if (this.p.h === -1) {
+      this.p.x = n.x;
+      this.p.y = n.y;
+      return true;
+    }
+
+    if (d > 1) {
+      this.p.x -= ((dx / d) * e);
+      this.p.y -= ((dy / d) * e);
+    } else {
+      if (this.p.h > 0) {
+        this.p.h--;
+      } else {
+        return true;
+      }
+    }
+
+    return false;
+  }
+  
+  distanceTo: function (n, details) {
+    var dx = this.p.x - n.x,
+        dy = this.p.y - n.y,
+        d = Math.sqrt(dx * dx + dy * dy); // 获取点位置x，y差值的平方和的平方根
+
+    return details ? [dx, dy, d] : d;
+  }
+```
+>更新：位置是以原坐标x，y减去随机值的正弦值；透明度是在0.1和原透明度与基准点之间的差值的5%之间的最大值；尺寸大小是在0.1和原尺寸与基准点之间的差值的5%之间的最大值。
+```bash
+ _update: function () {
+    var p,
+        d;
+
+    if (this._moveTowards(this.t)) {
+      p = this.q.shift(); // 获取点数组的第一个元素，并从数组中删去
+
+      if (p) {
+        this.t.x = p.x || this.p.x;
+        this.t.y = p.y || this.p.y;
+        this.t.z = p.z || this.p.z;
+        this.t.a = p.a || this.p.a;
+        this.p.h = p.h || 0;
+      } else {
+        if (this.s) {
+          this.p.x -= Math.sin(Math.random() * 3.142);
+          this.p.y -= Math.sin(Math.random() * 3.142);
+        } else {
+          this.move(new S.Point({
+            x: this.p.x + (Math.random() * 50) - 25,
+            y: this.p.y + (Math.random() * 50) - 25,
+          }));
+        }
+      }
+    }
+
+    d = this.p.a - this.t.a;
+    this.p.a = Math.max(0.1, this.p.a - (d * 0.05));
+    d = this.p.z - this.t.z;
+    this.p.z = Math.max(1, this.p.z - (d * 0.05));
+  }
+```
 ## 核心功能
 >shapeCanvas 项目中用来绘制图形的HTML元素 
 
 >shapeContext 绘图元素上的一个 CanvasRenderingContext2D 二维渲染
 
 font-awesome icon文件绘制
+1. 图片加载：成功=>加载图片，失败=>加载文字“What？”。
+2. 清空当前Canvas内容
+3. 绘制宽、高为画布60%的图片
 ```bash
     imageFile: function (url, callback) {
       var image = new Image(),
@@ -126,7 +200,7 @@ font-awesome icon文件绘制
 
       image.onload = function () {
         shapeContext.clearRect(0, 0, shapeCanvas.width, shapeCanvas.height);
-        shapeContext.drawImage(this, 0, 0, a.h * 0.6, a.h * 0.6);
+        shapeContext.drawImage(this, 0, 0, a.h * 0.6, a.h * 0.6);  // 绘制图片
         callback(processCanvas());
       };
 
@@ -137,20 +211,26 @@ font-awesome icon文件绘制
       image.src = url;
     },
 ```
-绘制圆
+绘制圆：
+1. 在Canvas内清除指定的像素
+2. 绘制指定半径的圆，并用像素点填充
 ```bash
     circle: function (d) {
       var r = Math.max(0, d) / 2;
       shapeContext.clearRect(0, 0, shapeCanvas.width, shapeCanvas.height);
       shapeContext.beginPath();
-      shapeContext.arc(r * gap, r * gap, r * gap, 0, 2 * Math.PI, false);
-      shapeContext.fill();
+      shapeContext.arc(r * gap, r * gap, r * gap, 0, 2 * Math.PI, false); // 画半径为r的路径
+      shapeContext.fill(); // 填充圆路径里的内容
       shapeContext.closePath();
 
       return processCanvas();
     },
 ```
 绘制文本
+1. 设置文本字体大小
+2. 根据文本字长，比较文本长度和Canvas的宽度的80%
+3. 清空Canvas内容
+4. 	在画布上绘制“被填充的”文本
 ```bash
     letter: function (l) {
       var s = 0;
@@ -162,12 +242,14 @@ font-awesome icon文件绘制
       setFontSize(s);
 
       shapeContext.clearRect(0, 0, shapeCanvas.width, shapeCanvas.height);
-      shapeContext.fillText(l, shapeCanvas.width / 2, shapeCanvas.height / 2);
+      shapeContext.fillText(l, shapeCanvas.width / 2, shapeCanvas.height / 2);  // 填充文字
 
       return processCanvas();
     },
 ```
 绘制矩形
+1. 从0-height（矩形高度），0-width（矩形宽度）双循环，获取矩形每个像素点的位置。
+2. 根据获得像素位置数组，在数组对应位置画上像素圆点。
 ```bash
     rectangle: function (w, h) {
       var dots = [],
@@ -245,3 +327,6 @@ font-awesome icon文件绘制
       S.Shape.switchShape(obj);
     });
 ```
+
+# 总结
+此项目本质上是用白点代表像素点，并通过Canvas画布组合成每个时间状态下的图像，动态图则是通过在每个时间帧重绘了该时间点的图像，以达到类似倒计时的动效。
