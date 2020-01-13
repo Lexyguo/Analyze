@@ -275,7 +275,7 @@ font-awesome icon文件绘制
 ```bash
     S.Shape.switchShape(S.ShapeBuilder.letter(current[0] === cmd ? 'What?' : current));
 ```
-倒计时指令
+倒计时指令：timedAction控制变化时间间隔为1秒
 ```bash
     value = parseInt(value, 10) || 10;
     value = value > 0 ? value : 10;
@@ -305,7 +305,7 @@ font-awesome icon文件绘制
     value = Math.min(value, maxShapeSize);
     S.Shape.switchShape(S.ShapeBuilder.circle(value));
 ```
-绘制时间指令
+绘制时间指令：timedAction控制变化时间间隔为1秒，当前时间（时间格式MM-dd）值不一致的时候会更新Canvas画布。
 ```bash
     var t = formatTime(new Date());
 
