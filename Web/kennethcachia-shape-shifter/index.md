@@ -1,6 +1,42 @@
 # Web前端Canvas绘图项目实例 -- Shape Shifter
 [kennethcachia/shape-shifter](https://github.com/kennethcachia/shape-shifter)项目是一个用canvas绘制粒子，以Grunt为基础构建工具，通过对粒子的指定组合来实现不同形状渲染的画布实验项目，还支持文本、倒数、时间和图标的模式。
 
+## 预备知识
+
+#### Canvas坐标系
+默认情况下，Canvas 的坐标系以Canvas 元素的左上角为坐标原点(0, 0)。水平方向为x轴，并向右增长；垂直方向为y轴，并向下增长
+
+画布上每一个点的坐标都直接映射到一个CSS像素上，点可以使用浮点数来指定坐标，但它不会自动转换为整型值。需要注意的是，此时，所绘制的内容并不会立即显示出来。因为这里只是定义一条不可见的路径，并未在画布上绘制任何图形。稍后，可以调用stroke()或fill()方法，来执行绘制动作，使其可见。
+
+
+#### Canvas绘制文本
+```bash
+fillText(text, x, y, [maxWidth])
+strokeText(text, x, y, [maxWidth])
+````
+如上方法，表示在(x,y)的位置，绘制text的内容。可选参数maxWidth为文本的最大宽度，单位为像素。如果设置了该属性，当文本内容宽度超过该参数值，则会自动按比例缩小字体，使文本的内容全部可见；未超过时，则以实际宽度显示。如果未设置该属性，当文本内容宽度超过画布宽度时，超出的内容将被隐藏。调用一次fillText()或strokeText()方法，只能绘制一行文本，如果要绘制多行文本，需要调用多次。
+
+还可以通过设置如下表中属性，来保证文本在各浏览器下显示一致。
+
+| 属性          | 描述           | 
+|:------------- |:------------- | 
+| font          | 文本字体，可设置字体样式的任何值，如font style，font weight，font size，font face等，该属性的值是CSS3字体字符串 |
+| textAlign     | 文本参照X轴坐标如何进行水平对齐。取值：start， end，left，right，center，默认值为start|
+| textBaseline  | 文本参照Y轴坐标如何进行垂直对齐。取值：top，middle，alphabetic，ideographic，bottom，默认值：alphabetic |
+
+
+#### Canvas操作图像像素 **(Canvas通过getImageData方法获取图像像素)**
+```bash
+var data = context.getImageData(sx, sy, sWidth, sHeight)
+````
+sx、sy为所选区域的坐标，sWidth、sHeight为所选区域的宽度和高度。该方法返回一个指向ImageData对象的引用，其内容为所选区域中的原始像素信息，该对象包括以下三个属性：
+  * width：所选区域中的每行有多少个像素。
+
+  * height：所选区域中的每列有多少个像素。
+
+  * data：像素数值的一维数组，保存所选区域中每个像素的RGBA（红、绿、蓝、alpha）值，按该区域从左到右、从上到下按RGBA格式依次保存，如[r1,g1,b1,a1,r2,g2,b2,a2...] 。因此，所选区域中的每个像素，在这个数组中就变成了四个整数值。
+  
+
 ## 项目框架
 
 ```bash
@@ -189,7 +225,50 @@
 
 >shapeContext 绘图元素上的一个 CanvasRenderingContext2D 二维渲染
 
-font-awesome icon文件绘制
+##### 处理画布
+```bash
+ function processCanvas() {
+     // 获取指定区域内图像RGBA数据
+    var pixels = shapeContext.getImageData(0, 0, shapeCanvas.width, shapeCanvas.height).data, 
+        dots = [],
+        x = 0,
+        y = 0,
+        fx = shapeCanvas.width,
+        fy = shapeCanvas.height,
+        w = 0,
+        h = 0;
+        
+    // 由于每个像素点存储了RGBA四个数据，所以为了获得图像每个像素的信息，则需要以四为进制单位遍历
+    for (var p = 0; p < pixels.length; p += (4 * gap)) {
+    // 由于本项目粒子拼凑图像时均为白色，所以不需要每个像素点前三位RGB颜色的数据，只要通过指定位置像素的透明度来判断该位置是否有像素
+      if (pixels[p + 3] > 0) {
+        dots.push(new S.Point({
+          x: x,
+          y: y
+        }));
+
+        w = x > w ? x : w;
+        h = y > h ? y : h;
+        fx = x < fx ? x : fx;
+        fy = y < fy ? y : fy;
+      }
+
+     // 重新描绘图像的默认直径值为gap变量的值，所以在设置重绘白点时以13为单位
+      x += gap;
+
+     // 一行结束开启新一行的遍历
+      if (x >= shapeCanvas.width) {
+        x = 0;
+        y += gap;
+        p += gap * 4 * shapeCanvas.width;
+      }
+    }
+
+    return { dots: dots, w: w + fx, h: h + fy };
+  }
+```
+
+##### font-awesome icon文件绘制
 1. 图片加载：成功=>加载图片，失败=>加载文字“What？”。
 2. 清空当前Canvas内容
 3. 绘制宽、高为画布60%的图片
@@ -211,7 +290,7 @@ font-awesome icon文件绘制
       image.src = url;
     },
 ```
-绘制圆：
+##### 绘制圆：
 1. 在Canvas内清除指定的像素
 2. 绘制指定半径的圆，并用像素点填充
 ```bash
@@ -226,7 +305,7 @@ font-awesome icon文件绘制
       return processCanvas();
     },
 ```
-绘制文本
+##### 绘制文本
 1. 设置文本字体大小
 2. 根据文本字长，比较文本长度和Canvas的宽度的80%
 3. 清空Canvas内容
@@ -247,7 +326,7 @@ font-awesome icon文件绘制
       return processCanvas();
     },
 ```
-绘制矩形
+##### 绘制矩形
 1. 从0-height（矩形高度），0-width（矩形宽度）双循环，获取矩形每个像素点的位置。
 2. 根据获得像素位置数组，在数组对应位置画上像素圆点。
 ```bash
