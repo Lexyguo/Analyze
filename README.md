@@ -19,4 +19,8 @@
     <td>alexfoxy/laxxx</td>
     <td>https://github.com/alexfoxy/laxxx</td>
   </tr>
+  <tr>
+    <td>node-modules/common-bin 中的command.js</td>
+    <td>https://github.com/node-modules/common-bin/blob/master/lib/command.js</td>
+  </tr>
 </table>
