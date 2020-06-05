@@ -11,7 +11,7 @@
     <td>地址</td>
   </tr>
   <tr>
-    <td rowspan="2">前端</td>
+    <td rowspan="3">前端</td>
     <td>kennethcachia/shape-shifter</td>
     <td>https://github.com/kennethcachia/shape-shifter</td>
   </tr>
