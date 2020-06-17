@@ -49,6 +49,8 @@ assert模块是Node的内置模块，主要用于断言。如果表达式不符�
     this.yargs.showHelp(level);
   }
 ```
+## load()方法用来加载子命令
+
 通过判断fs.existsSync检测输入的文件路径是否存在并判断fullPath是否描述文件系统目录，以输出提示信息。通过fs.readdirSync同步获取路径中子文件的文件名，将js文件的文件名加入names数组并通过add方法加入子命令集中。
 ```bash
 
@@ -77,6 +79,8 @@ assert模块是Node的内置模块，主要用于断言。如果表达式不符�
   }
 
 ```
+## add（）方法用来添加子命令
+
 instanceof是用来判断一个对象是否存在与另一个对象的原型链上。  
 在add中会排除引入非CommonBin子类的命令类，同时在控制台上输出目标路径为非文件时的提示。
 ```bash
@@ -102,6 +106,7 @@ instanceof是用来判断一个对象是否存在与另一个对象的原型链�
     this[COMMANDS].set(name, target);
   }
 ```
+## alias（）给已存在的命令添加别名
 在控制台输出对别名是否输入的判断、是否有重复的命名的判断。
 ```bash
 
@@ -118,7 +123,26 @@ instanceof是用来判断一个对象是否存在与另一个对象的原型链�
   }
 
 ```
-
+## start()方法用来解析命令行参数并调用[DISPATCH]方法来执行参数中的子命令
+```bash
+  /**
+   * 开始bin的重要部分的进程
+   */
+  start() {
+    co(function* () {
+      // 用 `--get-yargs-completions` 去替换我们的KEY, 因此yargs不会阻断我们的调度[DISPATCH]
+      const index = this.rawArgv.indexOf('--get-yargs-completions');
+      if (index !== -1) {
+        // bash 将会要求 `--get-yargs-completions my-git remote add`, 所以我们得移除2
+        this.rawArgv.splice(index, 2, `--AUTO_COMPLETIONS=${this.rawArgv.join(',')}`);
+      }
+      yield this[DISPATCH]();
+    }.bind(this)).catch(this.errorHandler.bind(this));
+  }
+```
+### * DISPATCH方法用来执行子命令（通过调用子命令的run方法）
+当this[COMMANDS]的子命令存在时会通过getSubCommandInstance（）方法获取子命令集，再执行子命令的* DISPATCH方法。
+当子命令不存在时，才会用 yield this.helper.callFn(this.run, [ context ], this);来执行真正的run方法（此处的run执行的应该是子类里的run，而非common-bin.js的run函数）
 ```bash
 
   /**
@@ -183,6 +207,7 @@ instanceof是用来判断一个对象是否存在与另一个对象的原型链�
     }
   }
 ```
+## get（）获得操作的具体内容
 helper.unparseArgv(argv)：解析argv并将其更改为数组样式  
 helper.extractExecArgv(argv)：从argv中提取execArgv
 ```bash
