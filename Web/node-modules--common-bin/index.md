@@ -142,7 +142,8 @@ instanceof是用来判断一个对象是否存在与另一个对象的原型链�
 ```
 ### * DISPATCH方法用来执行子命令（通过调用子命令的run方法）
 当this[COMMANDS]的子命令存在时会通过getSubCommandInstance（）方法获取子命令集，再执行子命令的* DISPATCH方法。
-当子命令不存在时，才会用 yield this.helper.callFn(this.run, [ context ], this);来执行真正的run方法（此处的run执行的应该是子类里的run，而非common-bin.js的run函数）
+
+当子命令不存在时，才会用 yield this.helper.callFn(this.run, [ context ], this);来执行真正的run方法（此处的run执行的应该是子类里的run，而非common-bin.js的run函数）。
 ```bash
 
   /**
@@ -311,7 +312,6 @@ helper.extractExecArgv(argv)：从argv中提取execArgv
   }
 ```
 
-
 ##  common-bin 使用须知
 ### 方法
 - start() - 启动程序，且只能在bin文件中使用一次。
@@ -340,3 +340,21 @@ helper.extractExecArgv(argv)：从argv中提取execArgv
   - execArgv - {Boolean} 是否将execArgv提取到context.execArgv.
   - removeAlias - {Boolean} 是否从argv中删除别名密钥.
   - removeCamelCase - {Boolean} 是否从argv中删除驼峰案例密钥.
+
+
+
+## 支持返回 promise 的方法的原因
+这里通过callFn的定义可以看出，函数区分了不同异步调用方法的入口，在用yield继续执行之前没有执行完的函数。（感觉这里区分函数类型的操作并没有实际执行意义）
+```bash
+exports.callFn = function* (fn, args = [], thisArg) {
+  if (!is.function(fn)) return;
+  if (is.generatorFunction(fn)) {
+    return yield fn.apply(thisArg, args);
+  }
+  const r = fn.apply(thisArg, args);
+  if (is.promise(r)) {
+    return yield r;
+  }
+  return r;
+};
+```
